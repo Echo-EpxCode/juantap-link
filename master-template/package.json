@@ -1,0 +1,18 @@
+{
+    "name": "master-template",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "dev": "node ./node_modules/@tailwindcss/cli/dist/index.mjs -i ./src/css/theme.css -o ./dist/app.css --watch",
+        "build": "node ./node_modules/@tailwindcss/cli/dist/index.mjs -i ./src/css/theme.css -o ./dist/app.css --minify"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "@tailwindcss/cli": "^4.3.3",
+        "tailwindcss": "^4.3.3"
+    }
+}

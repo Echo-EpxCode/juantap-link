@@ -1,0 +1,3 @@
+# Disposable nested acceptance-test repository; keep its Git metadata and files
+# out of this reusable customization package.
+/agent-acceptance-test/

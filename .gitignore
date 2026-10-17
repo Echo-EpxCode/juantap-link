@@ -1,0 +1,12 @@
+# Installed dependencies; restore from each project's lockfile when needed.
+**/node_modules/
+**/vendor/
+
+# Local environment and credentials.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Operating-system files.
+.DS_Store
+Thumbs.db

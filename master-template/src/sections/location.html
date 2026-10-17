@@ -1,0 +1,70 @@
+<!-- =====================================================
+     EP WEBCRAFT — LOCATION SECTION
+     ===================================================== -->
+
+<section id="location" class="border-t border-[var(--color-border)] bg-[var(--color-background)] py-16 sm:py-20"
+    aria-labelledby="location-title">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+
+        <div class="mx-auto max-w-2xl text-center">
+            <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--color-primary)]"
+                data-location-eyebrow>
+                Find Us
+            </p>
+
+            <h2 id="location-title" class="text-3xl font-bold tracking-tight text-[var(--color-text)] sm:text-4xl"
+                data-location-title>
+                Visit Our Location
+            </h2>
+
+            <p class="mt-4 text-sm leading-7 text-[var(--color-text-muted)] sm:text-base" data-location-description>
+                Find us at the address below.
+            </p>
+        </div>
+
+        <div class="mt-10 grid gap-8 lg:grid-cols-2 lg:items-center">
+
+            <!-- Address and Directions -->
+            <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm sm:p-8">
+
+                <div
+                    class="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-surface-soft)] text-2xl text-[var(--color-primary)]">
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                </div>
+
+                <h3 class="text-xl font-semibold text-[var(--color-text)]">
+                    Our Address
+                </h3>
+
+                <p class="mt-3 text-sm leading-7 text-[var(--color-text-muted)]" data-location-address>
+                    Business address goes here.
+                </p>
+
+                <a href="https://maps.google.com/" target="_blank" rel="noopener noreferrer"
+                    class="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                    data-location-directions>
+                    <i class="bi bi-map" aria-hidden="true"></i>
+                    Get Directions
+                </a>
+
+            </div>
+
+            <!-- Optional Map -->
+            <div class="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-soft)]"
+                data-location-map-container>
+                <div class="flex min-h-64 flex-col items-center justify-center gap-3 p-8 text-center"
+                    data-location-map-placeholder>
+                    <i class="bi bi-map text-3xl text-[var(--color-primary)]" aria-hidden="true"></i>
+
+                    <p class="text-sm text-[var(--color-text-muted)]">
+                        Add a Google Maps embed URL to display your location here.
+                    </p>
+                </div>
+
+                <iframe class="hidden h-80 w-full border-0" title="Business location on Google Maps" loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade" data-location-map></iframe>
+            </div>
+
+        </div>
+    </div>
+</section>

@@ -1,0 +1,107 @@
+<!-- =====================================================
+     EP WEBCRAFT — RESPONSIVE HEADER
+     ===================================================== -->
+
+<header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-background)]">
+
+    <!-- HEADER CONTENT -->
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+
+        <!-- BRAND -->
+        <a href="#"
+            class="shrink-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-primary)]"
+            aria-label="Go to homepage">
+            <span class="text-xl font-bold tracking-tight text-[var(--color-text)]" data-site-name>
+                Business Name
+            </span>
+        </a>
+
+        <!-- DESKTOP NAVIGATION -->
+        <nav class="hidden items-center gap-8 md:flex" aria-label="Primary navigation">
+            <a href="#about"
+                class="text-sm font-medium text-[var(--color-text-muted)] transition-colors duration-300 hover:text-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-primary)]">
+                About
+            </a>
+
+            <a href="#services"
+                class="text-sm font-medium text-[var(--color-text-muted)] transition-colors duration-300 hover:text-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-primary)]">
+                Services
+            </a>
+
+            <a href="#gallery"
+                class="text-sm font-medium text-[var(--color-text-muted)] transition-colors duration-300 hover:text-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-primary)]">
+                Gallery
+            </a>
+
+            <a href="#contact"
+                class="text-sm font-medium text-[var(--color-text-muted)] transition-colors duration-300 hover:text-[var(--color-primary)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-primary)]">
+                Contact
+            </a>
+        </nav>
+
+        <!-- DESKTOP CTA -->
+        <a href="#contact"
+            class="hidden items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-surface)] shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] md:inline-flex">
+            <span>Get Started</span>
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
+
+        <!-- MOBILE MENU TOGGLE -->
+        <button type="button"
+            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text)] transition-colors duration-300 hover:bg-[var(--color-surface-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] md:hidden"
+            aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-navigation" data-menu-toggle>
+            <i class="bi bi-list text-2xl" aria-hidden="true"></i>
+        </button>
+
+    </div>
+
+    <!-- =====================================================
+         MOBILE NAVIGATION BACKDROP
+         ===================================================== -->
+
+    <button type="button" class="mobile-navigation-backdrop" aria-label="Close navigation menu" tabindex="-1"
+        aria-hidden="true" data-menu-backdrop inert></button>
+
+    <!-- =====================================================
+         MOBILE NAVIGATION DRAWER
+         ===================================================== -->
+
+    <aside id="mobile-navigation" class="mobile-navigation focus:outline-none" role="dialog" aria-modal="true"
+        aria-label="Mobile navigation" aria-hidden="true" inert data-mobile-navigation>
+
+        <!-- DRAWER HEADER -->
+        <div class="mobile-navigation-header">
+            <span class="mobile-navigation-title">Navigation</span>
+
+            <button type="button" class="mobile-navigation-close" aria-label="Close navigation menu" data-menu-close>
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!-- DRAWER LINKS -->
+        <nav class="mobile-navigation-links" aria-label="Mobile navigation links">
+            <a href="#about" data-menu-link>
+                About
+            </a>
+
+            <a href="#services" data-menu-link>
+                Services
+            </a>
+
+            <a href="#gallery" data-menu-link>
+                Gallery
+            </a>
+
+            <a href="#contact" data-menu-link>
+                Contact
+            </a>
+
+            <a href="#contact" class="mobile-navigation-cta" data-menu-link>
+                Get Started
+                <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+            </a>
+        </nav>
+
+    </aside>
+
+</header>
