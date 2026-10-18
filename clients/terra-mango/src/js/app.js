@@ -32,6 +32,7 @@ function renderSocialCards() {
     content.social.cards.forEach((item) => {
         const card = document.createElement("article");
         card.className = "social-card";
+        card.tabIndex = 0;
 
         const icon = document.createElement("span");
         icon.className = "social-card__icon";
