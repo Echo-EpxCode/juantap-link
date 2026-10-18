@@ -506,6 +506,7 @@ function updateContent() {
     updateAboutContent();
     updateServicesContent();
     updateFeaturesContent();
+    updateDigitalStampCardContent();
     updateProductsContent();
     updateMenuContent();
     updatePortfolioContent();
@@ -1090,6 +1091,119 @@ function updateFeaturesContent() {
 
             grid.appendChild(card);
         });
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| DIGITAL STAMP CARD CONTENT
+|--------------------------------------------------------------------------
+*/
+function updateDigitalStampCardContent() {
+    const stampCard = content.digitalStampCard;
+
+    if (!stampCard) {
+        return;
+    }
+
+    const section = document.querySelector("#digital-stamp-card");
+
+    if (!section) {
+        return;
+    }
+
+    const setText = (selector, value) => {
+        const element = section.querySelector(selector);
+
+        if (element) {
+            element.textContent = value || "";
+        }
+    };
+
+    setText("[data-stamp-eyebrow]", stampCard.eyebrow);
+    setText("[data-stamp-title-main]", stampCard.title?.main);
+    setText("[data-stamp-title-highlight]", stampCard.title?.highlight);
+    setText("[data-stamp-description]", stampCard.description);
+    setText("[data-stamp-card-label]", stampCard.cardLabel);
+    setText("[data-stamp-member-name]", stampCard.memberName);
+    setText("[data-stamp-card-number]", stampCard.cardNumber);
+    setText("[data-stamp-reward-title]", stampCard.rewardTitle);
+    setText("[data-stamp-preview-note]", stampCard.previewNote);
+
+    const grid = section.querySelector("[data-stamp-grid]");
+    const progress = section.querySelector("[data-stamp-progress]");
+    const progressBar = section.querySelector("[data-stamp-progress-bar]");
+    const earnedLabel = section.querySelector("[data-stamp-count]");
+    const rewardDescription = section.querySelector("[data-stamp-reward-description]");
+
+    const configuredTotal = Number(stampCard.stampsRequired);
+    const total = Number.isFinite(configuredTotal)
+        ? Math.min(12, Math.max(1, Math.trunc(configuredTotal)))
+        : 8;
+    const configuredEarned = Number(stampCard.stampsEarned);
+    const earned = Number.isFinite(configuredEarned)
+        ? Math.min(total, Math.max(0, Math.trunc(configuredEarned)))
+        : 0;
+    const remaining = total - earned;
+    const percentage = (earned / total) * 100;
+    const stampIcon = /^bi-[a-z0-9-]+$/i.test(stampCard.stampIcon || "")
+        ? stampCard.stampIcon
+        : "bi-star-fill";
+
+    if (grid) {
+        grid.replaceChildren();
+
+        for (let index = 0; index < total; index += 1) {
+            const isEarned = index < earned;
+            const slot = document.createElement("li");
+            const icon = document.createElement("i");
+
+            slot.className = [
+                "grid aspect-square place-items-center rounded-full border-2 transition-colors",
+                isEarned
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-surface)]"
+                    : "border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-muted)]",
+            ].join(" ");
+            slot.setAttribute("aria-label", `Stamp ${index + 1}: ${isEarned ? "collected" : "not collected"}`);
+
+            icon.className = `bi ${isEarned ? stampIcon : "bi-plus-lg"} text-lg sm:text-base`;
+            icon.setAttribute("aria-hidden", "true");
+
+            slot.appendChild(icon);
+            grid.appendChild(slot);
+        }
+    }
+
+    if (earnedLabel) {
+        earnedLabel.textContent = `${earned} of ${total} stamps collected`;
+    }
+
+    if (progress) {
+        progress.setAttribute("aria-valuemax", String(total));
+        progress.setAttribute("aria-valuenow", String(earned));
+    }
+
+    if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
+    }
+
+    if (rewardDescription) {
+        const reward = stampCard.rewardDescription || "your reward";
+        rewardDescription.textContent = remaining > 0
+            ? `Collect ${remaining} more ${remaining === 1 ? "stamp" : "stamps"} to unlock ${reward}.`
+            : `${reward} is unlocked on this sample card.`;
+    }
+
+    const action = section.querySelector("[data-stamp-action]");
+    const actionLabel = section.querySelector("[data-stamp-action-label]");
+    const actionUrl = stampCard.buttonUrl || "#contact";
+    const isSafeActionUrl = /^(https?:\/\/\S+|#[a-z0-9_-]+)$/i.test(actionUrl);
+
+    if (action && actionLabel && isSafeActionUrl && stampCard.buttonLabel) {
+        action.href = actionUrl;
+        actionLabel.textContent = stampCard.buttonLabel;
+    } else if (action) {
+        action.remove();
     }
 }
 /*

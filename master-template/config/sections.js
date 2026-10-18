@@ -25,6 +25,11 @@ const sections = [
     },
 
     {
+        name: "digitalStampCard",
+        enabled: true,
+    },
+
+    {
         name: "products",
         enabled: true,
     },

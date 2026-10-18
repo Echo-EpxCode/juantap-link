@@ -1,3 +1,3 @@
-const sections = ["header", "hero", "social", "footer"];
+const sections = ["header", "hero", "products", "digitalStampCard", "social", "footer"];
 
 export default sections;

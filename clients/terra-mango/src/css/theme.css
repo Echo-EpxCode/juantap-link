@@ -339,6 +339,265 @@ img {
     background-size: 18px 18px;
 }
 
+.products-section {
+    padding: 6.5rem 0;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-cream);
+    background-image: radial-gradient(rgb(247 223 165 / 24%) 0.7px, transparent 0.7px);
+    background-size: 18px 18px;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+}
+
+.product-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-paper);
+    box-shadow: 0 8px 24px rgb(51 51 51 / 8%);
+    transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgb(51 51 51 / 14%);
+}
+
+.product-card__media {
+    display: grid;
+    aspect-ratio: 4 / 3;
+    place-items: center;
+    overflow: hidden;
+    background: var(--color-soft-golden);
+}
+
+.product-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 400ms ease;
+}
+
+.product-card:hover .product-card__media img {
+    transform: scale(1.04);
+}
+
+.product-card__placeholder {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    color: var(--color-forest);
+    font-size: 3.5rem;
+}
+
+.product-card__details {
+    padding: 1.5rem;
+}
+
+.product-card__details h3 {
+    margin: 0;
+    color: var(--color-forest-deep);
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    line-height: 1.2;
+}
+
+.product-card__details > p {
+    min-height: 4.5em;
+    margin: 0.75rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    line-height: 1.65;
+}
+
+.product-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.2rem;
+    color: var(--color-forest);
+    font-weight: 800;
+}
+
+.product-card__footer i {
+    font-size: 1.1rem;
+    transition: transform 220ms ease;
+}
+
+.product-card:hover .product-card__footer i {
+    transform: translateX(4px);
+}
+
+.stamp-section {
+    padding: 6.5rem 0;
+    background: var(--color-paper);
+}
+
+.stamp-section .section-heading {
+    margin-bottom: 2.5rem;
+}
+
+.stamp-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+    max-width: 1000px;
+    margin-inline: auto;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-paper);
+    box-shadow: 0 18px 45px rgb(51 51 51 / 10%);
+}
+
+.stamp-card__progress-panel,
+.stamp-card__reward-panel {
+    padding: clamp(1.4rem, 4vw, 2.5rem);
+}
+
+.stamp-card__progress-panel {
+    background: var(--color-cream);
+}
+
+.stamp-card__topline,
+.stamp-card__count-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.stamp-card__label,
+.stamp-card__reward-title {
+    margin: 0;
+    color: var(--color-forest);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.stamp-card__topline h3 {
+    margin: 0.35rem 0 0;
+    color: var(--color-forest-deep);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+}
+
+.stamp-card__demo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    background: var(--color-soft-golden);
+    color: var(--color-forest);
+    font-size: 0.72rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.stamp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 2rem 0 1.2rem;
+    padding: 0;
+    list-style: none;
+}
+
+.stamp-slot {
+    display: grid;
+    min-width: 0;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px dashed var(--color-border);
+    border-radius: 50%;
+    background: rgb(255 255 255 / 76%);
+    color: var(--color-muted);
+    font-size: clamp(1rem, 3vw, 1.5rem);
+}
+
+.stamp-slot.is-earned {
+    border-style: solid;
+    border-color: var(--color-forest);
+    background: var(--color-forest);
+    color: var(--color-mango);
+}
+
+.stamp-card__count-row {
+    color: var(--color-forest-deep);
+    font-size: 0.76rem;
+    font-weight: 800;
+}
+
+.stamp-card__count-row span:last-child {
+    color: var(--color-muted);
+    font-size: 0.64rem;
+    text-align: right;
+}
+
+.stamp-progress {
+    height: 9px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 85%);
+}
+
+.stamp-progress span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-forest);
+    transition: width 400ms ease;
+}
+
+.stamp-card__reward-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.stamp-card__gift {
+    display: grid;
+    width: 48px;
+    aspect-ratio: 1;
+    margin-bottom: 1.25rem;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--color-soft-golden);
+    color: var(--color-forest);
+    font-size: 1.5rem;
+}
+
+.stamp-card__reward-copy {
+    margin: 0.6rem 0 0;
+    color: var(--color-forest-deep);
+    font-family: var(--font-display);
+    font-size: 1.55rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.stamp-card__action {
+    margin-top: 1.5rem;
+}
+
+.stamp-card__note {
+    margin: 1rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.72rem;
+}
+
 .section-shell,
 .footer-shell {
     width: min(100% - 3rem, 1180px);
@@ -842,6 +1101,40 @@ img {
 
     .social-section {
         padding: 5rem 0;
+    }
+
+    .products-section {
+        padding: 5rem 0;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .product-card__details {
+        padding: 1rem;
+    }
+
+    .product-card__details h3 {
+        font-size: 1.1rem;
+    }
+
+    .product-card__details > p {
+        min-height: 0;
+        font-size: 0.8rem;
+    }
+
+    .stamp-section {
+        padding: 5rem 0;
+    }
+
+    .stamp-card {
+        grid-template-columns: 1fr;
+    }
+
+    .stamp-card__reward-panel {
+        border-top: 1px solid var(--color-border);
     }
 
     .section-shell,

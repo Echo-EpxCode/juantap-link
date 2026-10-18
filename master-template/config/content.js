@@ -142,6 +142,25 @@ const content = {
             },
         ],
     },
+    digitalStampCard: {
+        eyebrow: "A little reward for coming back",
+        title: {
+            main: "Every visit brings you",
+            highlight: "closer to a treat.",
+        },
+        description: "Collect a stamp with each purchase and enjoy a reward when your card is full.",
+        cardLabel: "Member rewards",
+        memberName: "Sample member",
+        cardNumber: "DEMO CARD · NOT ACTIVE",
+        stampsRequired: 8,
+        stampsEarned: 5,
+        stampIcon: "bi-cup-hot-fill",
+        rewardTitle: "Your next reward",
+        rewardDescription: "A free treat of your choice",
+        buttonLabel: "Ask about rewards",
+        buttonUrl: "#contact",
+        previewNote: "Preview only. Stamp balances are not saved.",
+    },
     products: {
         eyebrow: "Our Products",
 

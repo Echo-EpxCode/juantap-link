@@ -8,3 +8,4 @@ This is the EP-Webcraft Git repository. It contains `clients/`, `master-template
 - For master-template specifics, follow [its project instructions](./master-template/AGENTS.md).
 - Use the `permission-first-sdlc` skill for evidence-based work. Follow direct user authorization without asking for duplicate approval; request separate authorization for consequential operations outside the scope already granted.
 - Do not add or run tests/checks unless requested or authorized. Report exact results and side effects when checks are run.
+v  

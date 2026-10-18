@@ -57,6 +57,102 @@ function renderSocialCards() {
     });
 }
 
+function renderProducts() {
+    const grid = document.querySelector("[data-products-grid]");
+
+    if (!grid || !Array.isArray(content.products.items)) {
+        return;
+    }
+
+    grid.replaceChildren();
+    content.products.items.forEach((product) => {
+        const card = document.createElement("article");
+        card.className = "product-card";
+
+        const media = document.createElement("div");
+        media.className = "product-card__media";
+
+        if (product.image) {
+            const image = document.createElement("img");
+            image.src = product.image;
+            image.alt = product.title || "";
+            image.loading = "lazy";
+            media.append(image);
+        } else {
+            const placeholder = document.createElement("div");
+            placeholder.className = "product-card__placeholder";
+            placeholder.setAttribute("aria-hidden", "true");
+
+            const icon = document.createElement("i");
+            icon.className = `bi ${product.icon || "bi-image"}`;
+            placeholder.append(icon);
+            media.append(placeholder);
+        }
+
+        const details = document.createElement("div");
+        details.className = "product-card__details";
+
+        const title = document.createElement("h3");
+        title.textContent = product.title;
+
+        const description = document.createElement("p");
+        description.textContent = product.description;
+
+        const footer = document.createElement("div");
+        footer.className = "product-card__footer";
+
+        const price = document.createElement("span");
+        price.textContent = product.price || "";
+
+        const arrow = document.createElement("i");
+        arrow.className = "bi bi-arrow-right";
+        arrow.setAttribute("aria-hidden", "true");
+
+        footer.append(price, arrow);
+        details.append(title, description, footer);
+        card.append(media, details);
+        grid.append(card);
+    });
+}
+
+function renderDigitalStampCard() {
+    const grid = document.querySelector("[data-stamp-grid]");
+    const progress = document.querySelector("[data-stamp-progress]");
+    const progressBar = document.querySelector("[data-stamp-progress-bar]");
+    const total = Math.max(1, Math.floor(Number(content.digitalStampCard.stampsRequired) || 1));
+    const earned = Math.min(total, Math.max(0, Math.floor(Number(content.digitalStampCard.stampsEarned) || 0)));
+
+    if (grid) {
+        grid.replaceChildren();
+        for (let index = 0; index < total; index += 1) {
+            const slot = document.createElement("li");
+            slot.className = `stamp-slot${index < earned ? " is-earned" : ""}`;
+            slot.setAttribute("aria-label", `Stamp ${index + 1}: ${index < earned ? "earned" : "not yet earned"}`);
+
+            const icon = document.createElement("i");
+            icon.className = `bi ${index < earned ? "bi-cup-hot-fill" : "bi-plus-lg"}`;
+            icon.setAttribute("aria-hidden", "true");
+            slot.append(icon);
+            grid.append(slot);
+        }
+    }
+
+    setText("[data-stamp-count]", `${earned} of ${total} stamps`);
+    setText("[data-stamp-next-reward]", earned === total
+        ? "Your sample card is full!"
+        : `Collect ${total - earned} more ${total - earned === 1 ? "stamp" : "stamps"} to unlock a free mango milk tea.`);
+
+    if (progress) {
+        progress.setAttribute("aria-valuemax", String(total));
+        progress.setAttribute("aria-valuenow", String(earned));
+        progress.setAttribute("aria-valuetext", `${earned} of ${total} sample stamps earned`);
+    }
+
+    if (progressBar) {
+        progressBar.style.width = `${(earned / total) * 100}%`;
+    }
+}
+
 function renderOrderOptions() {
     const grid = document.querySelector("[data-order-grid]");
 
@@ -156,6 +252,21 @@ function applyContent() {
     setText("[data-hero-description]", content.hero.description);
     setText("[data-hero-primary-label]", content.hero.primaryLabel);
     setText("[data-hero-secondary-label]", content.hero.secondaryLabel);
+    setText("[data-products-eyebrow]", content.products.eyebrow);
+    setText("[data-products-title-main]", content.products.title);
+    setText("[data-products-title-highlight]", content.products.highlight);
+    setText("[data-products-description]", content.products.description);
+    setText("[data-stamp-eyebrow]", content.digitalStampCard.eyebrow);
+    setText("[data-stamp-title-main]", content.digitalStampCard.title);
+    setText("[data-stamp-title-highlight]", content.digitalStampCard.highlight);
+    setText("[data-stamp-description]", content.digitalStampCard.description);
+    setText("[data-stamp-card-label]", content.digitalStampCard.cardLabel);
+    setText("[data-stamp-member-name]", content.digitalStampCard.memberName);
+    setText("[data-stamp-card-number]", content.digitalStampCard.cardNumber);
+    setText("[data-stamp-reward-title]", content.digitalStampCard.rewardTitle);
+    setText("[data-stamp-next-reward]", content.digitalStampCard.rewardDescription);
+    setText("[data-stamp-action-label]", content.digitalStampCard.buttonLabel);
+    setText("[data-stamp-preview-note]", content.digitalStampCard.previewNote);
     setText("[data-social-eyebrow]", content.social.eyebrow);
     setText("[data-social-title]", content.social.title);
     setText("[data-social-highlight]", content.social.highlight);
@@ -171,7 +282,14 @@ function applyContent() {
     }
 
     renderSocialCards();
+    renderProducts();
+    renderDigitalStampCard();
     renderOrderOptions();
+
+    const stampAction = document.querySelector("[data-stamp-action]");
+    if (stampAction) {
+        stampAction.href = content.digitalStampCard.buttonUrl;
+    }
 }
 
 async function renderWebsite() {
