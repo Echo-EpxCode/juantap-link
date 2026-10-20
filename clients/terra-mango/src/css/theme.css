@@ -654,6 +654,7 @@ img {
     -webkit-backdrop-filter: blur(14px) saturate(125%);
     backdrop-filter: blur(14px) saturate(125%);
     color: var(--color-ink);
+    text-decoration: none;
     box-shadow:
         0 8px 24px rgb(51 51 51 / 8%),
         inset 0 1px 0 rgb(255 255 255 / 90%);
@@ -800,6 +801,8 @@ img {
     border-radius: 4px;
     background: var(--color-paper);
     scroll-margin-top: 2rem;
+    color: inherit;
+    text-decoration: none;
 }
 
 .order-option img {
@@ -807,6 +810,16 @@ img {
     height: 42px;
     flex: 0 0 auto;
     object-fit: contain;
+}
+
+.order-option__icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+    place-items: center;
+    color: var(--color-forest-deep);
+    font-size: 1.8rem;
 }
 
 .order-option div {
@@ -855,6 +868,38 @@ img {
     font-size: 1rem;
 }
 
+.footer-branches {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgb(0 0 0 / 18%);
+}
+
+.footer-branches h2 {
+    margin: 0 0 0.8rem;
+    color: var(--color-forest-deep);
+    font-size: 1.15rem;
+}
+
+.footer-branch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.8rem;
+}
+
+.footer-branch h3 {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+}
+
+.footer-branch p,
+.footer-branch a {
+    margin: 0.25rem 0 0;
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
+}
+
 .footer-links {
     display: flex;
     grid-column: 2;
@@ -881,7 +926,8 @@ img {
     margin-top: 0.8rem;
 }
 
-.footer-social span {
+.footer-social span,
+.footer-social a {
     display: grid;
     width: 40px;
     aspect-ratio: 1;
@@ -890,6 +936,11 @@ img {
     border-radius: 50%;
     color: var(--color-ink);
     font-size: 1.15rem;
+}
+
+.footer-social a {
+    color: var(--color-ink);
+    text-decoration: none;
 }
 
 .site-footer__copyright {
@@ -935,6 +986,11 @@ img {
     object-fit: contain;
     border-radius: 50%;
     background: var(--color-paper);
+}
+
+.floating-actions__button i {
+    color: #fff;
+    font-size: 1.45rem;
 }
 
 @keyframes content-enter {

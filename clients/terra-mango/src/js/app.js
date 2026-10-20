@@ -22,37 +22,66 @@ function setText(selector, value) {
     }
 }
 
-function renderSocialCards() {
+function safeExternalUrl(value) {
+    if (typeof value !== "string" || value.trim() === "") {
+        return null;
+    }
+
+    try {
+        const url = new URL(value, window.location.href);
+        return ["http:", "https:"].includes(url.protocol) && url.hostname ? url.href : null;
+    } catch {
+        return null;
+    }
+}
+
+function iconClasses(icon) {
+    return typeof icon === "string" && /^bi-[a-z0-9-]{1,60}$/.test(icon)
+        ? ["bi", icon]
+        : ["bi", "bi-link-45deg"];
+}
+
+function renderSocialCards(items = content.social.cards) {
     const grid = document.querySelector("[data-social-grid]");
 
     if (!grid) {
         return;
     }
 
-    content.social.cards.forEach((item) => {
-        const card = document.createElement("article");
+    grid.replaceChildren();
+    items.forEach((item) => {
+        const href = safeExternalUrl(item.url);
+        const card = document.createElement(href ? "a" : "article");
         card.className = "social-card";
-        card.tabIndex = 0;
+        if (href) {
+            card.href = href;
+            card.target = "_blank";
+            card.rel = "noopener noreferrer";
+        } else {
+            card.tabIndex = 0;
+        }
 
         const icon = document.createElement("span");
         icon.className = "social-card__icon";
         icon.setAttribute("aria-hidden", "true");
 
         const iconElement = document.createElement("i");
-        iconElement.className = `bi ${item.icon}`;
+        iconElement.classList.add(...iconClasses(item.icon));
         icon.append(iconElement);
 
         const title = document.createElement("h3");
-        title.textContent = item.name;
+        title.textContent = item.name || item.label || "Visit us online";
 
         const description = document.createElement("p");
-        description.textContent = item.description;
+        description.textContent = item.description || "Visit us online";
 
-        const status = document.createElement("span");
-        status.className = "social-card__status";
-        status.textContent = item.status;
-
-        card.append(icon, title, description, status);
+        card.append(icon, title, description);
+        if (item.status) {
+            const status = document.createElement("span");
+            status.className = "social-card__status";
+            status.textContent = item.status;
+            card.append(status);
+        }
         grid.append(card);
     });
 }
@@ -153,10 +182,42 @@ function renderDigitalStampCard() {
     }
 }
 
-function renderOrderOptions() {
+function renderOrderOptions(links = []) {
     const grid = document.querySelector("[data-order-grid]");
 
     if (!grid) {
+        return;
+    }
+
+    grid.replaceChildren();
+    const publicLinks = links.filter((link) => link.type === "ordering" && safeExternalUrl(link.url));
+
+    if (publicLinks.length > 0) {
+        publicLinks.forEach((link) => {
+            const item = document.createElement("a");
+            item.className = "order-option";
+            item.href = safeExternalUrl(link.url);
+            item.target = "_blank";
+            item.rel = "noopener noreferrer";
+
+            const icon = document.createElement("i");
+            icon.classList.add(...iconClasses(link.icon), "order-option__icon");
+            icon.setAttribute("aria-hidden", "true");
+
+            const details = document.createElement("div");
+            const title = document.createElement("h3");
+            title.textContent = link.label;
+            const status = document.createElement("p");
+            status.textContent = "Open ordering link";
+            details.append(title, status);
+
+            const arrow = document.createElement("i");
+            arrow.className = "bi bi-arrow-up-right";
+            arrow.setAttribute("aria-hidden", "true");
+
+            item.append(icon, details, arrow);
+            grid.append(item);
+        });
         return;
     }
 
@@ -186,10 +247,95 @@ function renderOrderOptions() {
     });
 }
 
-function renderFloatingActions() {
+function renderPublicBranches(branches = []) {
+    const section = document.querySelector("[data-public-branches]");
+    const list = document.querySelector("[data-branch-list]");
+    if (!section || !list) {
+        return;
+    }
+
+    list.replaceChildren();
+    section.hidden = branches.length === 0;
+    branches.forEach((branch) => {
+        const item = document.createElement("article");
+        item.className = "footer-branch";
+
+        const title = document.createElement("h3");
+        title.textContent = branch.name;
+        item.append(title);
+
+        if (branch.address) {
+            const address = document.createElement("p");
+            address.textContent = branch.address;
+            item.append(address);
+        }
+
+        if (branch.phone) {
+            const phoneValue = String(branch.phone);
+            const phoneLink = document.createElement("a");
+            phoneLink.href = `tel:${phoneValue.replace(/[^+0-9]/g, "")}`;
+            phoneLink.textContent = phoneValue;
+            item.append(phoneLink);
+        }
+
+        list.append(item);
+    });
+}
+
+function renderFooterSocialLinks(links = []) {
+    const container = document.querySelector("[data-footer-social]");
+    if (!container) {
+        return;
+    }
+
+    const publicLinks = links.filter((link) => ["social", "review"].includes(link.type) && safeExternalUrl(link.url));
+    if (publicLinks.length === 0) {
+        return;
+    }
+
+    container.replaceChildren();
+    publicLinks.forEach((link) => {
+        const anchor = document.createElement("a");
+        anchor.href = safeExternalUrl(link.url);
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.setAttribute("aria-label", link.label);
+
+        const icon = document.createElement("i");
+        icon.classList.add(...iconClasses(link.icon));
+        icon.setAttribute("aria-hidden", "true");
+        anchor.append(icon);
+        container.append(anchor);
+    });
+}
+
+function renderFloatingActions(links = []) {
     const root = document.createElement("nav");
     root.className = "floating-actions";
     root.setAttribute("aria-label", "Order with a delivery app");
+
+    const publicLinks = links.filter((item) => item.type === "ordering" && safeExternalUrl(item.url));
+    if (publicLinks.length > 0) {
+        publicLinks.slice(0, 3).forEach((action) => {
+            const link = document.createElement("a");
+            link.className = "floating-actions__button";
+            link.href = safeExternalUrl(action.url);
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.title = `Order with ${action.label}`;
+            link.setAttribute("aria-label", `Order with ${action.label}`);
+            link.style.setProperty("--action-color", "#285a42");
+
+            const icon = document.createElement("i");
+            icon.classList.add(...iconClasses(action.icon));
+            icon.setAttribute("aria-hidden", "true");
+            link.append(icon);
+            root.append(link);
+        });
+
+        document.body.append(root);
+        return;
+    }
 
     site.orderingActions.forEach((action) => {
         const link = document.createElement("a");
@@ -240,10 +386,16 @@ function initializeMobileNavigation() {
     });
 }
 
-function applyContent() {
-    document.title = `${site.name} | Mango Milk Tea`;
+function applyContent(publicData = null) {
+    const business = publicData?.business;
+    const businessName = business?.name || site.name;
+    document.title = `${businessName} | Mango Milk Tea`;
+    const descriptionMeta = document.querySelector('meta[name="description"]');
+    if (descriptionMeta) {
+        descriptionMeta.content = business?.description || business?.tagline || content.hero.description;
+    }
     document.querySelectorAll("[data-site-name]").forEach((element) => {
-        element.textContent = site.name;
+        element.textContent = businessName;
     });
 
     setText("[data-hero-eyebrow]", content.hero.eyebrow);
@@ -276,19 +428,60 @@ function applyContent() {
     setText("[data-footer-description]", content.footer.description);
     setText("[data-footer-copyright]", `© ${new Date().getFullYear()} Terra Mango. ${content.footer.copyright}`);
 
+    if (business?.tagline) {
+        setText("[data-hero-eyebrow]", business.tagline);
+    }
+    if (business?.description) {
+        setText("[data-hero-description]", business.description);
+        setText("[data-footer-description]", business.description);
+    }
+    setText("[data-footer-copyright]", `© ${new Date().getFullYear()} ${businessName}. ${content.footer.copyright}`);
+
     const heroImage = document.querySelector("[data-hero-image]");
     if (heroImage) {
         heroImage.src = site.heroImage;
     }
 
-    renderSocialCards();
+    const links = Array.isArray(publicData?.links) ? publicData.links : [];
+    const publicSocialLinks = links
+        .filter((link) => ["social", "review"].includes(link.type))
+        .map((link) => ({
+            name: link.label,
+            description: link.type === "review" ? "Share your experience" : "Visit us online",
+            icon: link.icon,
+            url: link.url,
+        }));
+    renderSocialCards(publicSocialLinks.length > 0 ? publicSocialLinks : content.social.cards);
     renderProducts();
     renderDigitalStampCard();
-    renderOrderOptions();
+    renderOrderOptions(links);
+    renderPublicBranches(Array.isArray(publicData?.branches) ? publicData.branches : []);
+    renderFooterSocialLinks(links);
 
     const stampAction = document.querySelector("[data-stamp-action]");
     if (stampAction) {
         stampAction.href = content.digitalStampCard.buttonUrl;
+    }
+}
+
+async function loadPublicBusiness() {
+    if (typeof site.businessSlug !== "string" || site.businessSlug.trim() === "") {
+        return null;
+    }
+
+    try {
+        const response = await fetch(`./public-business.php?slug=${encodeURIComponent(site.businessSlug)}`, {
+            headers: { Accept: "application/json" },
+        });
+        if (!response.ok) {
+            throw new Error(`Public business data returned ${response.status}`);
+        }
+
+        const payload = await response.json();
+        return payload && typeof payload.data === "object" ? payload.data : null;
+    } catch (error) {
+        console.error("Public business data could not be loaded; using the local page content.", error);
+        return null;
     }
 }
 
@@ -298,13 +491,16 @@ async function renderWebsite() {
     }
 
     try {
-        const markup = await Promise.all(sections.map(loadSection));
+        const [markup, publicData] = await Promise.all([
+            Promise.all(sections.map(loadSection)),
+            loadPublicBusiness(),
+        ]);
         app.replaceChildren();
         markup.forEach((section) => app.insertAdjacentHTML("beforeend", section));
 
-        applyContent();
+        applyContent(publicData);
         initializeMobileNavigation();
-        renderFloatingActions();
+        renderFloatingActions(publicData?.links || []);
     } catch (error) {
         app.innerHTML = '<p class="page-status" role="alert">Terra Mango could not load. Please refresh the page.</p>';
         console.error("Terra Mango page rendering failed:", error);

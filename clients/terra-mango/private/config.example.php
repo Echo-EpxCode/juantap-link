@@ -25,5 +25,6 @@ return [
     'keys' => [
         'contact_lookup' => 'REPLACE_WITH_RANDOM_SECRET',
         'contact_encryption' => 'REPLACE_WITH_RANDOM_SECRET',
+        'auth_rate_limit' => 'REPLACE_WITH_RANDOM_SECRET',
     ],
 ];

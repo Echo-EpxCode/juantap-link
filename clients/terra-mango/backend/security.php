@@ -30,6 +30,7 @@ function app_start_session(): void
     ini_set('session.use_strict_mode', '1');
     ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_httponly', '1');
+    ini_set('session.gc_maxlifetime', '43200');
 
     session_set_cookie_params([
         'lifetime' => 0,

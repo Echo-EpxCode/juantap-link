@@ -1,6 +1,7 @@
 const site = {
     name: "Terra Mango",
     tagline: "A brighter kind of milk tea break.",
+    businessSlug: "terra-mango-local",
     heroImage: "./assets/images/hero.jpeg",
     orderingActions: [
         {

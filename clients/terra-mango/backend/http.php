@@ -48,6 +48,20 @@ function app_json_response(array $payload, int $status = 200): void
     exit;
 }
 
+function app_html_page_headers(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-store, private');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('Referrer-Policy: no-referrer');
+    header("Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+}
+
 function app_handle_exception(Throwable $exception): void
 {
     try {
