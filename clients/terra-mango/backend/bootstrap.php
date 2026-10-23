@@ -6,6 +6,8 @@ require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/authorization.php';
 require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/customer_auth.php';
+require_once __DIR__ . '/customers.php';
 require_once __DIR__ . '/business.php';
 require_once __DIR__ . '/stamps.php';
 

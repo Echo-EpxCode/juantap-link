@@ -8,7 +8,7 @@ $errorMessage = null;
 $requestMethod = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
 app_start_session();
-if ($requestMethod === 'GET' && app_current_staff_user() !== null) {
+if ($requestMethod === 'GET' && app_current_admin_user() !== null) {
     header('Location: ' . app_admin_url('index.php'), true, 302);
     exit;
 }
@@ -28,7 +28,7 @@ if ($requestMethod === 'POST') {
             throw new AppHttpException(422, 'Enter a valid email and password.');
         }
 
-        if (app_authenticate_staff($email, $password)) {
+        if (app_authenticate_admin($email, $password)) {
             header('Location: ' . app_admin_url('index.php'), true, 303);
             exit;
         }
@@ -52,7 +52,7 @@ $csrfToken = app_csrf_token();
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in | JuanTap Link</title>
+    <title>Owner admin sign in | JuanTap Link</title>
     <style>
         :root { color-scheme: light; font-family: system-ui, sans-serif; color: #24352f; background: #f5f5ef; }
         body { min-height: 100vh; display: grid; place-items: center; margin: 0; padding: 1rem; }
@@ -68,8 +68,8 @@ $csrfToken = app_csrf_token();
 </head>
 <body>
 <main>
-    <h1>Business sign in</h1>
-    <p>Use the account provided by your business owner.</p>
+    <h1>Owner admin sign in</h1>
+    <p>Sign in to manage the Terra Mango customer and loyalty accounts.</p>
     <?php if ($errorMessage !== null): ?>
         <p class="error" role="alert"><?= app_escape_html($errorMessage) ?></p>
     <?php endif; ?>

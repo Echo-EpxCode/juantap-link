@@ -60,20 +60,23 @@ const content = {
         description: "Find Terra Mango, share a review, and keep up with the latest from our little mango world.",
         cards: [
             {
-                name: "Google Reviews",
+                name: "Google Review",
                 icon: "bi-google",
+                brand: "google",
                 description: "Tell us how your Terra Mango moment went.",
                 status: "",
             },
             {
                 name: "Facebook",
                 icon: "bi-facebook",
+                brand: "facebook",
                 description: "Follow along for updates and mango moments.",
                 status: "",
             },
             {
                 name: "TikTok",
                 icon: "bi-tiktok",
+                brand: "tiktok",
                 description: "A little behind-the-scenes, one sip at a time.",
                 status: "",
             },

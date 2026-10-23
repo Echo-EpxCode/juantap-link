@@ -167,6 +167,97 @@ img {
     color: #ffffff;
 }
 
+.customer-auth-modal {
+    width: min(calc(100% - 2rem), 460px);
+    max-height: min(720px, calc(100svh - 2rem));
+    padding: 0;
+    overflow: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    box-shadow: 0 24px 60px rgb(0 0 0 / 32%);
+}
+
+.customer-auth-modal::backdrop {
+    background: rgb(0 0 0 / 55%);
+}
+
+.customer-auth-modal__close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    display: grid;
+    width: 2.5rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    cursor: pointer;
+}
+
+.customer-auth-modal__content {
+    padding: 2.75rem 2rem 2rem;
+}
+
+.customer-auth-modal__content h1 {
+    margin: 0 2.75rem 0.5rem 0;
+    color: var(--color-forest-deep);
+    font-family: var(--font-display);
+    font-size: 2rem;
+    line-height: 1.15;
+}
+
+.customer-auth-modal__content p {
+    color: var(--color-muted);
+}
+
+.customer-auth-modal__content form {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 1.25rem;
+}
+
+.customer-auth-modal__content label {
+    margin-top: 0.55rem;
+    font-weight: var(--font-weight-semibold);
+}
+
+.customer-auth-modal__content input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font: inherit;
+}
+
+.customer-auth-modal__content button[type="submit"] {
+    margin-top: 0.85rem;
+    padding: 0.8rem;
+    border: 1px solid var(--color-forest-deep);
+    border-radius: 6px;
+    background: var(--color-forest-deep);
+    color: var(--color-paper);
+    font: inherit;
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+}
+
+.customer-auth-modal__content .error {
+    padding: 0.8rem;
+    border: 1px solid #d47d69;
+    border-radius: 6px;
+    background: #fff0ed;
+    color: #812b1d;
+}
+
+.customer-auth-modal__message {
+    margin: 0;
+    text-align: center;
+}
+
 .menu-toggle,
 .mobile-navigation {
     display: none;
@@ -659,39 +750,37 @@ img {
         0 8px 24px rgb(51 51 51 / 8%),
         inset 0 1px 0 rgb(255 255 255 / 90%);
     cursor: pointer;
-    animation: social-card-enter 500ms ease-out both;
+    animation: social-card-enter 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
     transition:
-        transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
-        border-color 220ms ease,
-        background-color 220ms ease,
-        box-shadow 220ms ease;
+        transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 250ms ease-out,
+        background-color 250ms ease-out,
+        box-shadow 250ms ease-out;
 }
 
 .social-card:nth-child(2) {
-    animation-delay: 90ms;
+    animation-delay: 75ms;
 }
 
 .social-card:nth-child(3) {
-    animation-delay: 180ms;
+    animation-delay: 150ms;
 }
 
 .social-card:focus-visible {
-    transform: translateY(-6px) scale(1.025);
+    transform: translateY(-4px) scale(1.02);
     border-color: var(--color-mango);
     box-shadow:
-        0 0 18px color-mix(in srgb, var(--color-mango) 52%, transparent),
-        0 16px 32px color-mix(in srgb, var(--color-mango) 44%, transparent),
-        0 8px 20px rgb(51 51 51 / 12%);
+        0 12px 24px rgb(51 51 51 / 16%),
+        0 4px 10px color-mix(in srgb, var(--color-mango) 30%, transparent);
 }
 
 @media (hover: hover) and (pointer: fine) {
     .social-card:hover {
-        transform: translateY(-6px) scale(1.025);
+        transform: translateY(-4px) scale(1.02);
         border-color: var(--color-mango);
         box-shadow:
-            0 0 18px color-mix(in srgb, var(--color-mango) 52%, transparent),
-            0 16px 32px color-mix(in srgb, var(--color-mango) 44%, transparent),
-            0 8px 20px rgb(51 51 51 / 12%);
+            0 12px 24px rgb(51 51 51 / 16%),
+            0 4px 10px color-mix(in srgb, var(--color-mango) 30%, transparent);
     }
 }
 
@@ -720,10 +809,66 @@ img {
         box-shadow 350ms ease;
 }
 
+.social-card--google .social-card__icon {
+    border-color: #e8edf5;
+    background: #fff;
+    color: #4285f4;
+}
+
+.social-card--google .social-card__mark {
+    background: conic-gradient(from -45deg, #4285f4 0 25%, #34a853 25% 50%, #fbbc05 50% 75%, #ea4335 75% 100%);
+    background-clip: text;
+    color: transparent;
+    font-size: 2.65rem;
+    font-weight: 750;
+    line-height: 1;
+    -webkit-background-clip: text;
+}
+
+.social-card--facebook .social-card__icon {
+    border-color: #e8edf5;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.social-card--facebook .social-card__mark {
+    font-family: Arial, sans-serif;
+    font-size: 3.2rem;
+    font-weight: 700;
+    line-height: 1;
+    transform: translateY(0.22rem);
+}
+
+.social-card--tiktok .social-card__icon {
+    border-color: #e8edf5;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.social-card--tiktok .social-card__mark {
+    font-family: Arial, sans-serif;
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.social-card__mark {
+    display: grid;
+    place-items: center;
+    transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.social-card__logo {
+    display: block;
+    width: 72%;
+    height: 72%;
+    object-fit: contain;
+}
+
 .social-card:hover .social-card__icon,
 .social-card:focus-visible .social-card__icon,
 .social-card__icon:hover {
-    transform: scale(1.08);
+    transform: scale(1.04);
     box-shadow:
         0 0 16px color-mix(in srgb, var(--color-mango) 100%, transparent),
         0 0 28px color-mix(in srgb, var(--color-mango) 80%, transparent);
@@ -1008,10 +1153,23 @@ img {
 @keyframes social-card-enter {
     from {
         opacity: 0;
+        transform: translateY(12px);
     }
 
     to {
         opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .social-card {
+        animation: none;
+        transition: none;
+    }
+
+    .social-card__icon,
+    .social-card__mark {
+        transition: none;
     }
 }
 

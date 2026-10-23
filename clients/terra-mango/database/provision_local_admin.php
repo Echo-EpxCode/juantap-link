@@ -53,23 +53,29 @@ try {
         local_setup_abort('The initial schema is missing. Import 001_initial_schema.sql first.');
     }
     if (!app_stamp_schema_ready()) {
-        local_setup_abort('Stamp setup is missing. Import 002_unique_purchase_references.sql first.');
+        local_setup_abort('Stamp setup is missing. Import migrations 002_unique_purchase_references.sql and 005_branchless_loyalty.sql.');
+    }
+    $accountSchema = $database->query(
+        "SELECT COUNT(*) AS total FROM schema_migrations WHERE version IN ('002_unique_purchase_references', '003_owner_customer_accounts', '004_remove_legacy_staff_tables')"
+    )->fetch_assoc();
+    if ((int) ($accountSchema['total'] ?? 0) !== 3) {
+        local_setup_abort('Required base and owner-only setup is missing. Import migrations 002, 003, and 004 before migration 005.');
     }
 
     $existingRows = $database->query(
         'SELECT
             (SELECT COUNT(*) FROM businesses) AS businesses,
-            (SELECT COUNT(*) FROM staff_users) AS staff_users'
+            (SELECT COUNT(*) FROM admin_users) AS admin_users'
     )->fetch_assoc();
-    if ((int) ($existingRows['businesses'] ?? 0) !== 0 || (int) ($existingRows['staff_users'] ?? 0) !== 0) {
-        local_setup_abort('This local database already has a business or staff account; refusing to add another first owner.');
+    if ((int) ($existingRows['businesses'] ?? 0) !== 0 || (int) ($existingRows['admin_users'] ?? 0) !== 0) {
+        local_setup_abort('This local database already has a business or admin account; refusing to add another first owner.');
     }
 
     $businessName = local_setup_prompt('Local business name', 'Terra Mango (Local)');
     $businessSlug = strtolower(local_setup_prompt('Business slug', 'terra-mango-local'));
     $branchName = local_setup_prompt('Local branch name', 'Main Branch (Local)');
     $ownerEmail = local_setup_prompt('Owner sign-in email');
-    $normalizedEmail = is_string($ownerEmail) ? app_normalize_staff_email($ownerEmail) : null;
+    $normalizedEmail = is_string($ownerEmail) ? app_normalize_admin_email($ownerEmail) : null;
 
     if ($businessName === '' || strlen($businessName) > 160) {
         local_setup_abort('Business name must be 1 to 160 bytes.');
@@ -84,7 +90,7 @@ try {
         local_setup_abort('Enter a valid owner email address.');
     }
 
-    $ownerEmailHash = app_staff_email_lookup_hash($normalizedEmail);
+    $ownerEmailHash = app_admin_email_lookup_hash($normalizedEmail);
     if (!is_string($ownerEmailHash)) {
         local_setup_abort('Could not prepare the owner email.');
     }
@@ -94,7 +100,7 @@ try {
     if (!is_string($ownerPasswordHash)) {
         local_setup_abort('Could not create the owner password hash.');
     }
-    $ownerEmailCiphertext = app_encrypt_staff_email($normalizedEmail);
+    $ownerEmailCiphertext = app_encrypt_admin_email($normalizedEmail);
 
     $database->begin_transaction();
     try {
@@ -114,22 +120,22 @@ try {
         $branchInsert->execute();
         $branchInsert->close();
 
-        $staffInsert = $database->prepare(
-            'INSERT INTO staff_users (email_value_ciphertext, email_lookup_hash, password_hash, status)
+        $adminInsert = $database->prepare(
+            'INSERT INTO admin_users (email_value_ciphertext, email_lookup_hash, password_hash, status)
              VALUES (?, ?, ?, \'active\')'
         );
-        $staffInsert->bind_param('sss', $ownerEmailCiphertext, $ownerEmailHash, $ownerPasswordHash);
-        $staffInsert->execute();
-        $staffUserId = (int) $database->insert_id;
-        $staffInsert->close();
+        $adminInsert->bind_param('sss', $ownerEmailCiphertext, $ownerEmailHash, $ownerPasswordHash);
+        $adminInsert->execute();
+        $adminUserId = (int) $database->insert_id;
+        $adminInsert->close();
 
-        $membershipInsert = $database->prepare(
-            'INSERT INTO business_memberships (business_id, staff_user_id, role_code, status)
-             VALUES (?, ?, \'owner\', \'active\')'
+        $adminBusinessStatus = 'active';
+        $adminBusinessInsert = $database->prepare(
+            'INSERT INTO admin_businesses (admin_user_id, business_id, status) VALUES (?, ?, ?)'
         );
-        $membershipInsert->bind_param('ii', $businessId, $staffUserId);
-        $membershipInsert->execute();
-        $membershipInsert->close();
+        $adminBusinessInsert->bind_param('iis', $adminUserId, $businessId, $adminBusinessStatus);
+        $adminBusinessInsert->execute();
+        $adminBusinessInsert->close();
 
         $programName = 'Mango Rewards (Local)';
         $programStatus = 'active';
@@ -143,7 +149,7 @@ try {
 
         $versionNumber = 1;
         $versionStatus = 'active';
-        $programTerms = 'One stamp is earned per unique receipt at a branch. Eight stamps may be redeemed for a free Mango Milk Tea.';
+        $programTerms = 'One stamp is issued per purchase. Stamp numbers 1 to 8 complete a set; eight stamps may be redeemed for a free Mango Milk Tea.';
         $effectiveFrom = gmdate('Y-m-d H:i:s');
         $versionInsert = $database->prepare(
             'INSERT INTO loyalty_program_versions
@@ -167,10 +173,7 @@ try {
         $ruleType = 'per_purchase';
         $scopeType = 'business';
         $scopeId = 0;
-        $ruleConfig = json_encode([
-            'stamps_per_purchase' => 1,
-            'duplicate_reference' => 'block_per_branch',
-        ], JSON_THROW_ON_ERROR);
+        $ruleConfig = json_encode(['stamps_per_purchase' => 1], JSON_THROW_ON_ERROR);
         $ruleStatus = 'active';
         $ruleInsert = $database->prepare(
             'INSERT INTO loyalty_earning_rules
@@ -194,7 +197,7 @@ try {
         $rewardKey = 'free-mango-milk-tea';
         $rewardName = 'Free Mango Milk Tea';
         $rewardDescription = 'A free Mango Milk Tea reward for the local stamp test.';
-        $rewardTerms = 'Redeem at an active Terra Mango branch. Eight stamps are deducted when redeemed.';
+        $rewardTerms = 'Redeem with the owner/admin. Eight stamps are deducted when redeemed.';
         $rewardStampCost = 8;
         $rewardStatus = 'active';
         $rewardInsert = $database->prepare(
@@ -218,10 +221,13 @@ try {
 
         $demoCustomerName = 'Local Demo Customer';
         $customerStatus = 'active';
+        $demoApprovalStatus = 'approved';
         $customerInsert = $database->prepare(
-            'INSERT INTO customers (business_id, display_name, status) VALUES (?, ?, ?)'
+            'INSERT INTO customers
+                (business_id, display_name, status, approval_status, reviewed_by_admin_id, approval_decided_at)
+             VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())'
         );
-        $customerInsert->bind_param('iss', $businessId, $demoCustomerName, $customerStatus);
+        $customerInsert->bind_param('isssi', $businessId, $demoCustomerName, $customerStatus, $demoApprovalStatus, $adminUserId);
         $customerInsert->execute();
         $customerId = (int) $database->insert_id;
         $customerInsert->close();

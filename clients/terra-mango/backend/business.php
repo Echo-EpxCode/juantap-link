@@ -182,7 +182,7 @@ function app_business_post_nonnegative_int(string $field): int
 
 function app_business_profile_for_owner(int $businessId): array
 {
-    app_require_business_membership($businessId, 'business.manage');
+    app_require_admin_business($businessId, 'business.manage');
     $statement = app_database()->prepare(
         'SELECT id, slug, display_name, tagline, description, status
          FROM businesses
@@ -211,7 +211,7 @@ function app_business_profile_for_owner(int $businessId): array
 
 function app_business_branches_for_owner(int $businessId): array
 {
-    app_require_business_membership($businessId, 'business.manage');
+    app_require_admin_business($businessId, 'business.manage');
     $statement = app_database()->prepare(
         'SELECT id, slug, display_name, address, public_phone, status
          FROM branches
@@ -240,7 +240,7 @@ function app_business_branches_for_owner(int $businessId): array
 
 function app_business_links_for_owner(int $businessId): array
 {
-    app_require_business_membership($businessId, 'business.manage');
+    app_require_admin_business($businessId, 'business.manage');
     $statement = app_database()->prepare(
         'SELECT id, link_type, label, url, icon, sort_order, is_active
          FROM business_links
@@ -280,16 +280,14 @@ function app_business_record_audit(
     $detailsJson = json_encode($details, JSON_THROW_ON_ERROR);
     $statement = $database->prepare(
         'INSERT INTO audit_logs
-            (business_id, actor_user_id, actor_membership_id, event_type, subject_type, subject_id, details)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+            (business_id, actor_admin_id, event_type, subject_type, subject_id, details)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
-    $actorUserId = (int) $membership['staff_user_id'];
-    $actorMembershipId = (int) $membership['id'];
+    $actorAdminId = (int) $membership['admin_user_id'];
     $statement->bind_param(
-        'iiissis',
+        'iissis',
         $businessId,
-        $actorUserId,
-        $actorMembershipId,
+        $actorAdminId,
         $eventType,
         $subjectType,
         $subjectId,
@@ -311,7 +309,7 @@ function app_business_update_profile(int $businessId, string $name, string $tagl
     $database = app_database();
     $database->begin_transaction();
     try {
-        $membership = app_require_business_membership($businessId, 'business.manage');
+        $membership = app_require_admin_business($businessId, 'business.manage');
         $current = $database->prepare(
             'SELECT id FROM businesses
              WHERE id = ? AND status IN (\'draft\', \'active\')
@@ -382,7 +380,7 @@ function app_business_save_branch(
     $database = app_database();
     $database->begin_transaction();
     try {
-        $membership = app_require_business_membership($businessId, 'business.manage');
+        $membership = app_require_admin_business($businessId, 'business.manage');
         $addressValue = $address === '' ? null : $address;
         $phoneValue = $phone === '' ? null : $phone;
 
@@ -475,7 +473,7 @@ function app_business_save_link(
     $database = app_database();
     $database->begin_transaction();
     try {
-        $membership = app_require_business_membership($businessId, 'business.manage');
+        $membership = app_require_admin_business($businessId, 'business.manage');
         $iconValue = $icon === '' ? null : $icon;
         $activeValue = $isActive ? 1 : 0;
 

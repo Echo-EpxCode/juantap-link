@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 function app_stamp_schema_ready(): bool
 {
-    $version = '002_unique_purchase_references';
+    $version = '005_branchless_loyalty';
     $statement = app_database()->prepare(
         'SELECT 1
          FROM schema_migrations m
@@ -13,10 +13,10 @@ function app_stamp_schema_ready(): bool
                FROM information_schema.statistics s
                WHERE s.table_schema = DATABASE()
                  AND s.table_name = \'stamp_transactions\'
-                 AND s.index_name = \'uq_stamp_purchase_reference\'
+                 AND s.index_name = \'uq_stamp_business_purchase_reference\'
                  AND s.non_unique = 0
                GROUP BY s.table_name
-               HAVING COUNT(*) = 3
+                 HAVING COUNT(*) = 2
            )
          LIMIT 1'
     );
@@ -32,18 +32,8 @@ function app_stamp_schema_ready(): bool
 function app_require_stamp_schema(): void
 {
     if (!app_stamp_schema_ready()) {
-        throw new AppHttpException(503, 'Stamp setup is incomplete. Apply migration 002 first.');
+        throw new AppHttpException(503, 'Stamp setup is incomplete. Apply migration 005 after migrations 001 through 004.');
     }
-}
-
-function app_stamp_normalize_purchase_reference(string $reference): string
-{
-    $normalized = strtoupper(trim($reference));
-    if ($normalized === '' || strlen($normalized) > 120) {
-        throw new AppHttpException(422, 'Enter a receipt reference of up to 120 characters.');
-    }
-
-    return $normalized;
 }
 
 function app_stamp_idempotency_hash(int $businessId, string $action, string $key): string
@@ -60,32 +50,21 @@ function app_stamp_idempotency_hash(int $businessId, string $action, string $key
     );
 }
 
-function app_stamp_purchase_reference_hash(int $businessId, int $branchId, string $reference): string
-{
-    return hash_hmac(
-        'sha256',
-        'purchase-reference' . "\0" . $businessId . "\0" . $branchId . "\0" . $reference,
-        app_auth_secret_key('contact_lookup'),
-        true
-    );
-}
-
 function app_stamp_existing_issue(
     int $businessId,
     string $idempotencyHash,
     int $cardId,
-    int $branchId,
-    string $purchaseReferenceHash
+    int $stampNumber
 ): ?int {
     $statement = app_database()->prepare(
-        'SELECT id, loyalty_card_id, branch_id, transaction_type, purchase_reference_hash
+        'SELECT id, loyalty_card_id, transaction_type, reference_note
          FROM stamp_transactions
          WHERE business_id = ? AND idempotency_key_hash = ?
          LIMIT 1'
     );
     $statement->bind_param('is', $businessId, $idempotencyHash);
     $statement->execute();
-    $statement->bind_result($transactionId, $matchedCardId, $matchedBranchId, $transactionType, $matchedReferenceHash);
+    $statement->bind_result($transactionId, $matchedCardId, $transactionType, $referenceNote);
     $found = $statement->fetch();
     $statement->close();
 
@@ -95,10 +74,10 @@ function app_stamp_existing_issue(
 
     if (
         (int) $matchedCardId !== $cardId
-        || (int) $matchedBranchId !== $branchId
         || $transactionType !== 'issue'
-        || !is_string($matchedReferenceHash)
-        || !hash_equals($matchedReferenceHash, $purchaseReferenceHash)
+        || !is_string($referenceNote)
+        || !preg_match('/\AStamp ([1-8])\z/', $referenceNote, $matches)
+        || (int) $matches[1] !== $stampNumber
     ) {
         throw new AppHttpException(409, 'This request token was already used for a different action.');
     }
@@ -110,18 +89,17 @@ function app_stamp_existing_redemption(
     int $businessId,
     string $idempotencyHash,
     int $cardId,
-    int $branchId,
     int $rewardId
 ): ?int {
     $statement = app_database()->prepare(
-        'SELECT id, loyalty_card_id, branch_id, reward_id
+        'SELECT id, loyalty_card_id, reward_id
          FROM reward_redemptions
          WHERE business_id = ? AND idempotency_key_hash = ?
          LIMIT 1'
     );
     $statement->bind_param('is', $businessId, $idempotencyHash);
     $statement->execute();
-    $statement->bind_result($redemptionId, $matchedCardId, $matchedBranchId, $matchedRewardId);
+    $statement->bind_result($redemptionId, $matchedCardId, $matchedRewardId);
     $found = $statement->fetch();
     $statement->close();
 
@@ -131,7 +109,6 @@ function app_stamp_existing_redemption(
 
     if (
         (int) $matchedCardId !== $cardId
-        || (int) $matchedBranchId !== $branchId
         || (int) $matchedRewardId !== $rewardId
     ) {
         throw new AppHttpException(409, 'This request token was already used for a different action.');
@@ -149,6 +126,7 @@ function app_stamp_lock_card(mysqli $database, int $businessId, int $cardId): ar
             ON c.id = lc.customer_id
            AND c.business_id = lc.business_id
            AND c.status = \'active\'
+           AND c.approval_status = \'approved\'
          INNER JOIN loyalty_programs p
             ON p.id = lc.loyalty_program_id
            AND p.business_id = lc.business_id
@@ -183,6 +161,58 @@ function app_stamp_lock_card(mysqli $database, int $businessId, int $cardId): ar
         'program_version_id' => (int) $programVersionId,
         'stamp_balance' => (int) $stampBalance,
     ];
+}
+
+function app_stamp_issued_numbers_for_card(
+    mysqli $database,
+    int $businessId,
+    int $cardId,
+    int $stampBalance,
+    bool $showCompletedSet = false
+): array
+{
+    $setSize = 8;
+    $currentSetCount = $stampBalance % $setSize;
+    if ($showCompletedSet && $stampBalance > 0 && $currentSetCount === 0) {
+        $currentSetCount = $setSize;
+    }
+    if ($currentSetCount === 0) {
+        return [];
+    }
+
+    $statement = $database->prepare(
+        'SELECT reference_note
+         FROM stamp_transactions
+         WHERE business_id = ? AND loyalty_card_id = ? AND transaction_type = \'issue\'
+         ORDER BY id DESC
+         LIMIT ?'
+    );
+    $statement->bind_param('iii', $businessId, $cardId, $currentSetCount);
+    $statement->execute();
+    $statement->bind_result($referenceNote);
+    $notes = [];
+    while ($statement->fetch()) {
+        $notes[] = is_string($referenceNote) ? $referenceNote : '';
+    }
+    $statement->close();
+
+    $issued = [];
+    foreach ($notes as $note) {
+        if (preg_match('/\AStamp ([1-8])\z/', $note, $matches)) {
+            $issued[] = (int) $matches[1];
+        }
+    }
+
+    // Older issue rows have no stamp number. Treat them as sequential slots
+    // so their existing balance still blocks those numbers in the current set.
+    for ($stampNumber = 1; count($issued) < $currentSetCount && $stampNumber <= $setSize; $stampNumber++) {
+        if (!in_array($stampNumber, $issued, true)) {
+            $issued[] = $stampNumber;
+        }
+    }
+
+    sort($issued);
+    return array_values(array_unique($issued));
 }
 
 function app_stamp_active_earning_value(mysqli $database, int $businessId, int $programVersionId): int
@@ -233,20 +263,18 @@ function app_record_stamp_audit(
 ): void {
     $detailsJson = json_encode($details, JSON_THROW_ON_ERROR);
     $businessId = (int) $membership['business_id'];
-    $staffUserId = (int) $membership['staff_user_id'];
-    $membershipId = (int) $membership['id'];
+    $adminUserId = (int) $membership['admin_user_id'];
     $subjectType = 'loyalty_card';
 
     $statement = $database->prepare(
         'INSERT INTO audit_logs
-            (business_id, actor_user_id, actor_membership_id, event_type, subject_type, subject_id, details)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+            (business_id, actor_admin_id, event_type, subject_type, subject_id, details)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
     $statement->bind_param(
-        'iiissis',
+        'iissis',
         $businessId,
-        $staffUserId,
-        $membershipId,
+        $adminUserId,
         $eventType,
         $subjectType,
         $subjectId,
@@ -258,36 +286,43 @@ function app_record_stamp_audit(
 
 function app_issue_stamp(
     int $businessId,
-    int $branchId,
     int $cardId,
-    string $purchaseReference,
+    int $stampNumber,
     string $idempotencyKey
 ): array {
-    $membership = app_require_business_membership($businessId, 'stamp.issue', $branchId);
+    $membership = app_require_admin_business($businessId, 'stamp.issue');
     app_require_stamp_schema();
 
     if ($cardId < 1) {
         throw new AppHttpException(422, 'Select an active loyalty card.');
     }
 
-    $purchaseReference = app_stamp_normalize_purchase_reference($purchaseReference);
-    $idempotencyHash = app_stamp_idempotency_hash($businessId, 'issue', $idempotencyKey);
-    $purchaseReferenceHash = app_stamp_purchase_reference_hash($businessId, $branchId, $purchaseReference);
-    $existingId = app_stamp_existing_issue(
-        $businessId,
-        $idempotencyHash,
-        $cardId,
-        $branchId,
-        $purchaseReferenceHash
-    );
-    if ($existingId !== null) {
-        return ['transaction_id' => $existingId, 'already_processed' => true];
+    if ($stampNumber < 1 || $stampNumber > 8) {
+        throw new AppHttpException(422, 'Select a stamp number from 1 to 8.');
     }
+
+    $idempotencyHash = app_stamp_idempotency_hash($businessId, 'issue', $idempotencyKey);
 
     $database = app_database();
     $database->begin_transaction();
     try {
         $card = app_stamp_lock_card($database, $businessId, $cardId);
+        $issuedNumbers = app_stamp_issued_numbers_for_card(
+            $database,
+            $businessId,
+            $cardId,
+            $card['stamp_balance']
+        );
+        $existingId = app_stamp_existing_issue($businessId, $idempotencyHash, $cardId, $stampNumber);
+        if ($existingId !== null) {
+            $database->rollback();
+            return ['transaction_id' => $existingId, 'already_processed' => true];
+        }
+
+        if (in_array($stampNumber, $issuedNumbers, true)) {
+            throw new AppHttpException(409, 'That stamp number has already been issued in this customer\'s current set. Choose another number.');
+        }
+
         $stampsToIssue = app_stamp_active_earning_value(
             $database,
             $businessId,
@@ -296,22 +331,22 @@ function app_issue_stamp(
 
         $insert = $database->prepare(
             'INSERT INTO stamp_transactions
-                (business_id, loyalty_card_id, branch_id, actor_membership_id, program_version_id,
-                 transaction_type, stamp_delta, idempotency_key_hash, purchase_reference_hash)
-             VALUES (?, ?, ?, ?, ?, \'issue\', ?, ?, ?)'
+            (business_id, loyalty_card_id, actor_admin_id, program_version_id,
+                 transaction_type, stamp_delta, idempotency_key_hash, reference_note)
+             VALUES (?, ?, ?, ?, \'issue\', ?, ?, ?)'
         );
-        $membershipId = (int) $membership['id'];
+        $adminUserId = (int) $membership['admin_user_id'];
         $programVersionId = $card['program_version_id'];
+        $referenceNote = 'Stamp ' . $stampNumber;
         $insert->bind_param(
-            'iiiiiiss',
+            'iiiiiss',
             $businessId,
             $cardId,
-            $branchId,
-            $membershipId,
+            $adminUserId,
             $programVersionId,
             $stampsToIssue,
             $idempotencyHash,
-            $purchaseReferenceHash
+            $referenceNote
         );
         $insert->execute();
         $transactionId = (int) $database->insert_id;
@@ -335,7 +370,7 @@ function app_issue_stamp(
             $membership,
             'stamp.issued',
             $cardId,
-            ['branch_id' => $branchId, 'stamps' => $stampsToIssue, 'transaction_id' => $transactionId]
+            ['stamps' => $stampsToIssue, 'transaction_id' => $transactionId]
         );
 
         $database->commit();
@@ -351,13 +386,12 @@ function app_issue_stamp(
                 $businessId,
                 $idempotencyHash,
                 $cardId,
-                $branchId,
-                $purchaseReferenceHash
+                $stampNumber
             );
             if ($existingId !== null) {
                 return ['transaction_id' => $existingId, 'already_processed' => true];
             }
-            throw new AppHttpException(409, 'This receipt already has a stamp for this branch.');
+            throw new AppHttpException(409, 'This stamp number has already been issued for this customer.');
         }
         throw $exception;
     }
@@ -365,12 +399,11 @@ function app_issue_stamp(
 
 function app_redeem_reward(
     int $businessId,
-    int $branchId,
     int $cardId,
     int $rewardId,
     string $idempotencyKey
 ): array {
-    $membership = app_require_business_membership($businessId, 'reward.redeem', $branchId);
+    $membership = app_require_admin_business($businessId, 'reward.redeem');
     app_require_stamp_schema();
 
     if ($cardId < 1 || $rewardId < 1) {
@@ -382,7 +415,6 @@ function app_redeem_reward(
         $businessId,
         $idempotencyHash,
         $cardId,
-        $branchId,
         $rewardId
     );
     if ($existingId !== null) {
@@ -422,19 +454,18 @@ function app_redeem_reward(
         }
 
         $stampDelta = -$stampCost;
-        $membershipId = (int) $membership['id'];
+        $adminUserId = (int) $membership['admin_user_id'];
         $insert = $database->prepare(
             'INSERT INTO stamp_transactions
-                (business_id, loyalty_card_id, branch_id, actor_membership_id, program_version_id,
+            (business_id, loyalty_card_id, actor_admin_id, program_version_id,
                  transaction_type, stamp_delta, idempotency_key_hash)
-             VALUES (?, ?, ?, ?, ?, \'redeem\', ?, ?)'
+             VALUES (?, ?, ?, ?, \'redeem\', ?, ?)'
         );
         $insert->bind_param(
-            'iiiiiis',
+            'iiiiis',
             $businessId,
             $cardId,
-            $branchId,
-            $membershipId,
+            $adminUserId,
             $programVersionId,
             $stampDelta,
             $idempotencyHash
@@ -460,17 +491,16 @@ function app_redeem_reward(
 
         $redemptionInsert = $database->prepare(
             'INSERT INTO reward_redemptions
-                (business_id, loyalty_card_id, branch_id, actor_membership_id, reward_id,
+                (business_id, loyalty_card_id, actor_admin_id, reward_id,
                  stamp_transaction_id, idempotency_key_hash, reward_name_snapshot,
                  reward_terms_snapshot, stamp_cost_snapshot)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $redemptionInsert->bind_param(
             'iiiiiisssi',
             $businessId,
             $cardId,
-            $branchId,
-            $membershipId,
+            $adminUserId,
             $rewardId,
             $transactionId,
             $idempotencyHash,
@@ -488,7 +518,6 @@ function app_redeem_reward(
             'reward.redeemed',
             $cardId,
             [
-                'branch_id' => $branchId,
                 'reward_id' => $rewardId,
                 'stamp_cost' => $stampCost,
                 'transaction_id' => $transactionId,
@@ -509,7 +538,6 @@ function app_redeem_reward(
                 $businessId,
                 $idempotencyHash,
                 $cardId,
-                $branchId,
                 $rewardId
             );
             if ($existingId !== null) {
@@ -528,7 +556,8 @@ function app_stamp_cards_for_business(int $businessId): array
                 lc.enrollment_version_id
          FROM loyalty_cards lc
          INNER JOIN customers c
-            ON c.id = lc.customer_id AND c.business_id = lc.business_id AND c.status = \'active\'
+            ON c.id = lc.customer_id AND c.business_id = lc.business_id
+               AND c.status = \'active\' AND c.approval_status = \'approved\'
          INNER JOIN loyalty_programs p
             ON p.id = lc.loyalty_program_id AND p.business_id = lc.business_id AND p.status = \'active\'
          INNER JOIN loyalty_program_versions v
@@ -557,6 +586,16 @@ function app_stamp_cards_for_business(int $businessId): array
     }
     $statement->close();
 
+    foreach ($cards as &$card) {
+        $card['issued_stamp_numbers'] = app_stamp_issued_numbers_for_card(
+            app_database(),
+            $businessId,
+            $card['id'],
+            $card['stamp_balance']
+        );
+    }
+    unset($card);
+
     return $cards;
 }
 
@@ -583,4 +622,43 @@ function app_stamp_rewards_for_version(int $businessId, int $programVersionId): 
     $statement->close();
 
     return $rewards;
+}
+
+function app_stamp_recent_activity_for_business(int $businessId): array
+{
+    $statement = app_database()->prepare(
+        'SELECT st.created_at, COALESCE(c.display_name, CONCAT(\'Customer #\', c.id)),
+                st.transaction_type, st.stamp_delta, rr.reward_name_snapshot, st.reference_note
+         FROM stamp_transactions st
+         INNER JOIN loyalty_cards lc
+            ON lc.id = st.loyalty_card_id AND lc.business_id = st.business_id
+         INNER JOIN customers c
+            ON c.id = lc.customer_id AND c.business_id = lc.business_id
+         LEFT JOIN reward_redemptions rr
+            ON rr.stamp_transaction_id = st.id AND rr.business_id = st.business_id
+         WHERE st.business_id = ?
+         ORDER BY st.id DESC
+         LIMIT 20'
+    );
+    $statement->bind_param('i', $businessId);
+    $statement->execute();
+    $statement->bind_result($createdAt, $customerName, $transactionType, $stampDelta, $rewardName, $referenceNote);
+
+    $activity = [];
+    while ($statement->fetch()) {
+        $label = $transactionType === 'redeem'
+            ? 'Redeemed ' . (is_string($rewardName) && $rewardName !== '' ? $rewardName : 'reward')
+            : ($transactionType === 'issue'
+                ? (is_string($referenceNote) && $referenceNote !== '' ? $referenceNote . ' issued' : 'Stamp issued')
+                : ucfirst((string) $transactionType));
+        $activity[] = [
+            'created_at' => (string) $createdAt,
+            'customer_name' => (string) $customerName,
+            'activity' => $label,
+            'stamp_delta' => (int) $stampDelta,
+        ];
+    }
+    $statement->close();
+
+    return $activity;
 }

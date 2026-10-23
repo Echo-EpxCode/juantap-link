@@ -52,7 +52,10 @@ function renderSocialCards(items = content.social.cards) {
     items.forEach((item) => {
         const href = safeExternalUrl(item.url);
         const card = document.createElement(href ? "a" : "article");
-        card.className = "social-card";
+        const brand = typeof item.brand === "string" && /^[a-z-]{1,30}$/.test(item.brand)
+            ? item.brand
+            : "default";
+        card.className = `social-card social-card--${brand}`;
         if (href) {
             card.href = href;
             card.target = "_blank";
@@ -65,8 +68,13 @@ function renderSocialCards(items = content.social.cards) {
         icon.className = "social-card__icon";
         icon.setAttribute("aria-hidden", "true");
 
-        const iconElement = document.createElement("i");
-        iconElement.classList.add(...iconClasses(item.icon));
+        const iconElement = document.createElement(brand === "default" ? "i" : "span");
+        if (brand === "default") {
+            iconElement.classList.add(...iconClasses(item.icon));
+        } else {
+            iconElement.className = "social-card__mark";
+            iconElement.textContent = brand === "facebook" ? "f" : brand === "tiktok" ? "T" : "G";
+        }
         icon.append(iconElement);
 
         const title = document.createElement("h3");
@@ -386,6 +394,139 @@ function initializeMobileNavigation() {
     });
 }
 
+function initializeCustomerAuthModal() {
+    const triggers = document.querySelectorAll("[data-customer-modal-url]");
+    if (triggers.length === 0) {
+        return;
+    }
+
+    const dialog = document.createElement("dialog");
+    dialog.className = "customer-auth-modal";
+    dialog.setAttribute("aria-labelledby", "customer-auth-modal-title");
+
+    const closeButton = document.createElement("button");
+    closeButton.className = "customer-auth-modal__close";
+    closeButton.type = "button";
+    closeButton.setAttribute("aria-label", "Close customer account form");
+    closeButton.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+
+    const content = document.createElement("div");
+    content.className = "customer-auth-modal__content";
+    content.setAttribute("aria-live", "polite");
+    dialog.append(closeButton, content);
+    document.body.append(dialog);
+
+    let activeRequest = 0;
+    let triggerElement = null;
+
+    const showMessage = (message) => {
+        content.replaceChildren();
+        const paragraph = document.createElement("p");
+        paragraph.className = "customer-auth-modal__message";
+        paragraph.textContent = message;
+        content.append(paragraph);
+    };
+
+    const renderForm = (markup) => {
+        const source = new DOMParser().parseFromString(markup, "text/html");
+        const main = source.querySelector("main");
+        if (!main) {
+            throw new Error("Customer form content was unavailable.");
+        }
+
+        content.replaceChildren(...Array.from(main.childNodes, (node) => document.importNode(node, true)));
+        const heading = content.querySelector("h1");
+        if (heading) {
+            heading.id = "customer-auth-modal-title";
+        }
+        content.querySelector('input:not([type="hidden"])')?.focus();
+    };
+
+    const openForm = async (url, trigger) => {
+        const requestId = ++activeRequest;
+        triggerElement = trigger;
+        if (!dialog.open) {
+            dialog.showModal();
+        }
+        showMessage("Loading customer account form…");
+
+        try {
+            const response = await fetch(url, { headers: { Accept: "text/html" }, credentials: "same-origin" });
+            if (!response.ok) {
+                throw new Error(`Customer form returned ${response.status}`);
+            }
+            if (new URL(response.url).pathname.endsWith("/customer/account.php")) {
+                window.location.assign(response.url);
+                return;
+            }
+            const markup = await response.text();
+            if (requestId === activeRequest && dialog.open) {
+                renderForm(markup);
+            }
+        } catch (error) {
+            console.error("Customer account form could not load.", error);
+            if (requestId === activeRequest && dialog.open) {
+                showMessage("The customer account form could not load. Please try again.");
+            }
+        }
+    };
+
+    closeButton.addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (event) => {
+        if (event.target === dialog) {
+            dialog.close();
+        }
+    });
+    dialog.addEventListener("close", () => triggerElement?.focus());
+
+    content.addEventListener("submit", async (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+        event.preventDefault();
+        showMessage("Submitting…");
+
+        try {
+            const response = await fetch(form.action, {
+                method: form.method || "POST",
+                body: new FormData(form),
+                credentials: "same-origin",
+                headers: { Accept: "text/html" },
+            });
+            const accountPath = "/customer/account.php";
+            if (new URL(response.url).pathname.endsWith(accountPath)) {
+                window.location.assign(response.url);
+                return;
+            }
+            renderForm(await response.text());
+        } catch (error) {
+            console.error("Customer account form could not submit.", error);
+            showMessage("The form could not be submitted. Please try again.");
+        }
+    });
+
+    content.addEventListener("click", (event) => {
+        const link = event.target.closest('a[href*="/customer/"]');
+        if (!link) {
+            return;
+        }
+        const url = new URL(link.href, window.location.href);
+        if (!/(?:login|register)\.php$/.test(url.pathname)) {
+            return;
+        }
+        event.preventDefault();
+        openForm(url.href, triggerElement);
+    });
+
+    triggers.forEach((trigger) => {
+        trigger.addEventListener("click", (event) => {
+            event.preventDefault();
+            openForm(trigger.dataset.customerModalUrl, trigger);
+        });
+    });
+}
+
 function applyContent(publicData = null) {
     const business = publicData?.business;
     const businessName = business?.name || site.name;
@@ -443,15 +584,6 @@ function applyContent(publicData = null) {
     }
 
     const links = Array.isArray(publicData?.links) ? publicData.links : [];
-    const publicSocialLinks = links
-        .filter((link) => ["social", "review"].includes(link.type))
-        .map((link) => ({
-            name: link.label,
-            description: link.type === "review" ? "Share your experience" : "Visit us online",
-            icon: link.icon,
-            url: link.url,
-        }));
-    renderSocialCards(publicSocialLinks.length > 0 ? publicSocialLinks : content.social.cards);
     renderProducts();
     renderDigitalStampCard();
     renderOrderOptions(links);
@@ -500,6 +632,7 @@ async function renderWebsite() {
 
         applyContent(publicData);
         initializeMobileNavigation();
+        initializeCustomerAuthModal();
         renderFloatingActions(publicData?.links || []);
     } catch (error) {
         app.innerHTML = '<p class="page-status" role="alert">Terra Mango could not load. Please refresh the page.</p>';
