@@ -1088,6 +1088,12 @@ img {
     text-decoration: none;
 }
 
+.footer-social img {
+    width: 1.15rem;
+    height: 1.15rem;
+    object-fit: contain;
+}
+
 .site-footer__copyright {
     grid-column: 1 / -1;
     margin: 2rem 0 0;
@@ -1484,4 +1490,12 @@ img {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+
+.google-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    vertical-align: middle;
 }

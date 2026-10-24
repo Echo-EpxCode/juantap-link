@@ -290,33 +290,6 @@ function renderPublicBranches(branches = []) {
     });
 }
 
-function renderFooterSocialLinks(links = []) {
-    const container = document.querySelector("[data-footer-social]");
-    if (!container) {
-        return;
-    }
-
-    const publicLinks = links.filter((link) => ["social", "review"].includes(link.type) && safeExternalUrl(link.url));
-    if (publicLinks.length === 0) {
-        return;
-    }
-
-    container.replaceChildren();
-    publicLinks.forEach((link) => {
-        const anchor = document.createElement("a");
-        anchor.href = safeExternalUrl(link.url);
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-        anchor.setAttribute("aria-label", link.label);
-
-        const icon = document.createElement("i");
-        icon.classList.add(...iconClasses(link.icon));
-        icon.setAttribute("aria-hidden", "true");
-        anchor.append(icon);
-        container.append(anchor);
-    });
-}
-
 function renderFloatingActions(links = []) {
     const root = document.createElement("nav");
     root.className = "floating-actions";
@@ -588,8 +561,6 @@ function applyContent(publicData = null) {
     renderDigitalStampCard();
     renderOrderOptions(links);
     renderPublicBranches(Array.isArray(publicData?.branches) ? publicData.branches : []);
-    renderFooterSocialLinks(links);
-
     const stampAction = document.querySelector("[data-stamp-action]");
     if (stampAction) {
         stampAction.href = content.digitalStampCard.buttonUrl;
