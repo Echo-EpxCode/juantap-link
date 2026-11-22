@@ -423,3 +423,33 @@ function app_customer_loyalty_view(int $customerId): array
         'rewards' => $rewards,
     ];
 }
+
+function app_admin_customer_usage_summary(int $businessId): array
+{
+    app_require_admin_business($businessId, 'customer.manage');
+
+    $statement = app_database()->prepare(
+        'SELECT
+            (SELECT COUNT(*)
+             FROM customers c
+             WHERE c.business_id = ? AND c.status = \'active\' AND c.approval_status = \'approved\'),
+            (SELECT COUNT(DISTINCT lc.customer_id)
+             FROM stamp_transactions st
+             INNER JOIN loyalty_cards lc
+                ON lc.id = st.loyalty_card_id AND lc.business_id = st.business_id
+             WHERE st.business_id = ?)'
+    );
+    $statement->bind_param('ii', $businessId, $businessId);
+    $statement->execute();
+    $statement->bind_result($activeApprovedCount, $stampActivityCount);
+    if (!$statement->fetch()) {
+        $statement->close();
+        throw new RuntimeException('Customer usage summary could not be loaded.');
+    }
+    $statement->close();
+
+    return [
+        'active_approved_customers' => (int) $activeApprovedCount,
+        'customers_with_stamp_activity' => (int) $stampActivityCount,
+    ];
+}

@@ -110,6 +110,9 @@ foreach ($cards as $card) {
 if ($selectedCard === null && $cards !== []) {
     $selectedCard = $cards[0];
 }
+$availableStampNumbers = $selectedCard === null
+    ? []
+    : array_values(array_diff(range(1, 8), $selectedCard['issued_stamp_numbers']));
 
 $rewards = $selectedCard === null
     ? []
@@ -156,6 +159,7 @@ app_html_page_headers();
         .filters label, .actions label { display: grid; gap: .35rem; font-weight: 650; }
         select, input { min-width: 220px; padding: .7rem; border: 1px solid #aeb9af; border-radius: 7px; font: inherit; }
         button, .button { display: inline-block; border: 0; border-radius: 7px; padding: .7rem 1rem; background: #285a42; color: #fff; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
+        button:disabled { opacity: .55; cursor: not-allowed; }
         .secondary { background: #59665f; }
         .actions section { flex: 1 1 360px; margin: 0; }
         @media (max-width: 560px) { header { align-items: flex-start; flex-direction: column; } select, input { box-sizing: border-box; width: 100%; min-width: 0; } }
@@ -231,15 +235,22 @@ app_html_page_headers();
                                 <?php endforeach; ?>
                             </select>
                         </label>
-                        <p id="issued-stamp-info" class="muted" role="status" aria-live="polite"></p>
+                        <p id="stamp-availability-info" class="muted" role="status" aria-live="polite">
+                            <?php if ($availableStampNumbers === []): ?>
+                                All 8 stamp numbers have already been issued in this current set.
+                            <?php else: ?>
+                                Available stamp numbers:
+                                <?= app_escape_html(implode(', ', array_map(static fn (int $number): string => 'Stamp ' . $number, $availableStampNumbers))) ?>.
+                            <?php endif; ?>
+                        </p>
                         <label>Stamp number
-                            <select id="stamp-number-select" name="stamp_number" required>
-                                <?php for ($stampNumber = 1; $stampNumber <= 8; $stampNumber++): ?>
+                            <select id="stamp-number-select" name="stamp_number" required aria-describedby="stamp-availability-info" <?= $availableStampNumbers === [] ? 'disabled' : '' ?>>
+                                <?php foreach ($availableStampNumbers as $stampNumber): ?>
                                     <option value="<?= $stampNumber ?>">Stamp <?= $stampNumber ?></option>
-                                <?php endfor; ?>
+                                <?php endforeach; ?>
                             </select>
                         </label>
-                        <button type="submit">Issue stamp</button>
+                        <button type="submit" <?= $availableStampNumbers === [] ? 'disabled' : '' ?>>Issue stamp</button>
                     </form>
                 </section>
 
@@ -309,8 +320,9 @@ app_html_page_headers();
 (() => {
     const customerSelect = document.getElementById('stamp-card-select');
     const stampSelect = document.getElementById('stamp-number-select');
-    const issuedInfo = document.getElementById('issued-stamp-info');
-    if (!customerSelect || !stampSelect || !issuedInfo) return;
+    const availabilityInfo = document.getElementById('stamp-availability-info');
+    if (!customerSelect || !stampSelect || !availabilityInfo) return;
+    const issueButton = stampSelect.form.querySelector('button[type="submit"]');
 
     function updateStampChoices() {
         const selectedCustomer = customerSelect.selectedOptions[0];
@@ -319,18 +331,23 @@ app_html_page_headers();
             .map(value => Number.parseInt(value, 10))
             .filter(value => Number.isInteger(value) && value >= 1 && value <= 8);
         const issuedSet = new Set(issuedNumbers);
+        const availableNumbers = [];
 
-        for (const option of stampSelect.options) {
-            const stampNumber = Number.parseInt(option.value, 10);
-            option.disabled = issuedSet.has(stampNumber);
+        stampSelect.replaceChildren();
+        for (let stampNumber = 1; stampNumber <= 8; stampNumber++) {
+            if (issuedSet.has(stampNumber)) continue;
+            availableNumbers.push(stampNumber);
+            const option = document.createElement('option');
+            option.value = String(stampNumber);
+            option.textContent = 'Stamp ' + stampNumber;
+            stampSelect.append(option);
         }
 
-        issuedInfo.textContent = issuedNumbers.length
-            ? 'Already issued in the current set: ' + issuedNumbers.map(number => 'Stamp ' + number).join(', ') + '.'
-            : 'No stamps issued in the current set yet.';
-
-        const firstAvailable = Array.from(stampSelect.options).find(option => !option.disabled);
-        if (firstAvailable) stampSelect.value = firstAvailable.value;
+        stampSelect.disabled = availableNumbers.length === 0;
+        issueButton.disabled = availableNumbers.length === 0;
+        availabilityInfo.textContent = availableNumbers.length
+            ? 'Available stamp numbers: ' + availableNumbers.map(number => 'Stamp ' + number).join(', ') + '.'
+            : 'All 8 stamp numbers have already been issued in this current set.';
     }
 
     customerSelect.addEventListener('change', updateStampChoices);

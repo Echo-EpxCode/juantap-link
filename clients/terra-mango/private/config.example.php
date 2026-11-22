@@ -13,13 +13,13 @@ if (!defined('JUANTAP_APP_CONFIG_INCLUDE')) {
  */
 return [
     'app' => [
-        'environment' => 'production',
+        'environment' => 'development',
     ],
     'database' => [
-        'host' => 'REPLACE_WITH_DATABASE_HOST',
+        'host' => '127.0.0.1',
         'port' => 3306,
-        'database' => 'REPLACE_WITH_DATABASE_NAME',
-        'username' => 'REPLACE_WITH_DATABASE_USERNAME',
+        'database' => 'terra_mango_local',
+        'username' => 'root',
         'password' => 'REPLACE_WITH_DATABASE_PASSWORD',
     ],
     'keys' => [

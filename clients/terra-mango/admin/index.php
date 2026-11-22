@@ -32,6 +32,11 @@ app_html_page_headers();
         a { color: #285a42; }
         button { border: 0; border-radius: 7px; padding: .65rem .9rem; background: #59665f; color: #fff; cursor: pointer; }
         form { margin: 0; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; margin: 1rem 0; }
+        .summary-card { display: grid; gap: .35rem; padding: .9rem; border: 1px solid #e3e7e2; border-radius: 9px; background: #fafbf8; }
+        .summary-label { color: #58675f; font-size: .82rem; font-weight: 650; }
+        .summary-card strong { color: #14532d; font-size: 1.65rem; }
+        .summary-card .muted { font-size: .78rem; }
     </style>
 </head>
 <body>
@@ -49,6 +54,18 @@ app_html_page_headers();
     <?php foreach ($businesses as $business): ?>
         <section>
             <h2><?= app_escape_html($business['business_name']) ?></h2>
+            <?php $usage = app_admin_customer_usage_summary((int) $business['business_id']); ?>
+            <div class="summary-grid" aria-label="Customer usage">
+                <article class="summary-card">
+                    <span class="summary-label">Active approved customers</span>
+                    <strong><?= app_escape_html($usage['active_approved_customers']) ?></strong>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-label">Customers with stamp activity</span>
+                    <strong><?= app_escape_html($usage['customers_with_stamp_activity']) ?></strong>
+                    <span class="muted">Unique customers with at least one recorded stamp transaction.</span>
+                </article>
+            </div>
             <p><a href="<?= app_escape_html(app_admin_url('customers.php') . '?business_id=' . (int) $business['business_id']) ?>">Review customer accounts</a></p>
             <p><a href="<?= app_escape_html(app_admin_url('stamps.php') . '?business_id=' . (int) $business['business_id']) ?>">Open stamp desk</a></p>
         </section>

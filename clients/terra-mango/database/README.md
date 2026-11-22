@@ -101,10 +101,37 @@ The source/archive counts should match and all missing-owner-actor counts should
 - An owner manually approves or rejects pending accounts. Approval is recorded with the owner ID, timestamp, and (for rejection) reason. Approval does not verify that the customer controls the email address.
 - An approved customer can view only their own card, balance, active rewards, and stamp history. Customers cannot issue stamps or redeem rewards themselves.
 - Only an owner/admin mapped to a business can use its admin tools. There are no manager or staff accounts or permissions.
-- Each issuance records one selected stamp number from 1 to 8. Numbers already issued in the customer's current set are disabled in the form and rejected by the server; the card balance and transaction history determine current-set progress.
+- Each issuance records one selected stamp number from 1 to 8. Numbers already issued in the customer's current set are omitted from the selector and rejected by the server; the card balance and transaction history determine current-set progress.
 - The owner stamp desk shows the latest 20 stamp and redemption records for the selected business; loyalty activity is not filtered by branch.
 - Redemption deducts the reward's configured stamp cost in the same transaction that writes its redemption and history. Any surplus remains on the card. For an eight-stamp reward, a balance of eight becomes zero; a balance of nine becomes one.
 - Stamps and redemptions lock the card balance and commit their ledger, balance, and audit changes atomically. InnoDB row locks and transactions are required.
+
+## Customer and admin overview
+
+- **Customer sign-in:** Registration stores a password hash and encrypted email with a keyed lookup hash. New registrations are pending until an owner approves them. Customer login uses a separate session from admin login.
+- **Customer dashboard:** An approved customer can see only their own stamp card, progress, balance, active rewards, and transaction history. Stamp balances and history come from the transaction-backed loyalty records.
+- **Admin sign-in:** Owners use the separate admin login. Protected requests re-check the admin account and its business mapping; CSRF protections, rate limits, secure session settings, and password hashing remain in place.
+- **Admin dashboard:** Each business shows active approved customer accounts and the number of distinct customers with at least one recorded stamp transaction, alongside the existing account-review and stamp-desk links. Counts are scoped to the authorized business. Stamp-activity counts include lifetime ledger activity, including redemptions; they are customers, not transaction totals.
+
+Keeping these counts derived from customer and transaction tables avoids extra counters that can drift when stamps are redeemed, corrected, or accounts are deactivated. Reusing the existing MySQLi connection and migration-ledger approach avoids introducing a second database stack, while the separate local database prevents local setup from affecting production or any previous local data.
+
+## Fresh local database setup
+
+The application has one shared MySQLi connection, loaded from the host-only `private/config.local.php`. To create a clean local database without replacing an existing one:
+
+1. In the local MySQL server, create a new database:
+
+   ```sql
+   CREATE DATABASE terra_mango_fresh_local
+       CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+2. In `private/config.local.php`, set `database.database` to `terra_mango_fresh_local`. Keep the environment set to `development`, the database host on loopback, and all secret keys private. An empty database password is accepted only for development on a loopback host; non-local connections require a password. Do not copy credentials into `config.example.php` or commit `config.local.php`.
+3. Select the new database and import `001_initial_schema.sql`, then migrations `002` through `005` in the order listed above. For this empty database, the legacy-table preflight/cutover is unnecessary; still confirm all five versions appear in `schema_migrations`.
+4. If a local owner account is needed, run `database/provision_local_admin.php` from the repository root as described below. It asks for the owner's email and prints a randomly generated password once. Securely save that password; the helper also creates a local demo customer card.
+5. Visit the customer and admin sign-in routes locally after setup. An empty fresh database has no owner or customer accounts until the local provisioning helper runs.
+
+The existing configured database is left untouched by this procedure. The local provisioning and password-recovery scripts refuse non-development, non-loopback, or non-`_local` databases and must never be deployed.
 
 ## Local-only first-owner setup
 
